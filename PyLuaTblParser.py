@@ -6,6 +6,12 @@ def extrat_dict_item(lua_table, start_index):
         return  dict_item(string format)
     '''
     cur_index = start_index
+    first_comma_index = lua_table.find(',', start_index)
+    first_braket_index = lua_table.find('{', start_index)
+    if first_comma_index < first_braket_index | first_comma_index == -1:
+        return first_comma_index
+
+
     left_braket_num = 0
     while cur_index < len(lua_table):
 
@@ -38,6 +44,8 @@ def str_resolve(lua_table):
 
 
 
-lua_table = '{array = {65,23,5,},dict = {mixed = {43,54.33,false,9,string = "value",},array = {3,6,4,},string = "value",},}'
+lua_table = '{array = {65,23,5,},\
+            dict = {mixed = {43,54.33,false,9,string = "value",},\
+                array = {3,6,4,},string = "value",},}'
 l = str_resolve
             
