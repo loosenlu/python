@@ -37,9 +37,14 @@ def str_resolve(lua_table):
         if lua_table[cur_index] == '=':
             is_dict = True
             dict_item_key = lua_table[pre_index:cur_index]
-            dict_item_value = lua_table[cur_index + 1:
-                                        extrat_dict_item(lua_table, cur_index + 1)]
+            next_index = extrat_dict_item(lua_table, cur_index + 1)
+            dict_item_value = lua_table[cur_index + 1: next_index]
             component_container.append({dict_item_key:dict_item_value})
+            cur_index = next_index + 1
+            continue
+        elif lua_table[cur_index] == ',':
+            
+            
         
 
 
