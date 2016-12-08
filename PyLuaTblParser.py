@@ -14,16 +14,56 @@ class PyLuaTblParser(object):
         self.lua_table = lua_table
         if self.lua_table == '':
             self.lua_table_dict = {}
-            self.update = True
+            self.consistency = True
         else:
             # check whether lua_table is a valid
             # lua table string.
             if PyLuaTblParser.__is_lua_table(self.lua_table):
                 self.lua_table_dict = \
                     PyLuaTblParser.__parse_lua_table(self.lua_table)
-                self.update = True
+                self.consistency = True
             else:
-                raise ValueError, "The lua table is invalid!"
+                raise ValueError, "The init lua table is invalid!"
+
+
+    def load(self, s):
+        """load a lua table(string format)
+
+        if lua table is invalid, will raise a ValueError.
+        """
+        if PyLuaTblParser.__is_lua_table(s):
+            self.lua_table = s
+            self.lua_table_dict = \
+                PyLuaTblParser.__parse_lua_table(self.lua_table)
+            self.consistency = True
+        else:
+            raise ValueError, "The load string is invalid!"
+
+
+    def dump(self):
+        """return the lua table(string format)
+
+        self.consistency indicate whether the lua_table is
+        latest.
+        """
+        if not self.consistency:
+            self.__synchronize_lua_table()
+        return self.lua_table
+
+
+    def __synchronize_lua_table(self):
+        """synchronize the self.lua_table.
+
+        Here,
+        """
+        dict_items = self.lua_table_dict.items()
+        for key, value in dict_items:
+            if isinstance(key, int):
+                pass
+            elif isinstance(key, str):
+                pass
+            else:
+                continue
 
 
     @staticmethod
@@ -222,3 +262,41 @@ class PyLuaTblParser(object):
                 converted_result[index] = i
                 index += 1
         return converted_result
+
+
+    @staticmethod
+    def __parse_python_data(python_data):
+        pass
+
+
+    @staticmethod
+    def __parse_python_dict(python_dict_data):
+
+        items_container = ['{']
+        for key, value in python_dict_data.items():
+            if not (isinstance(key, int) or
+                    isinstance(key, str)):
+                continue
+            else:
+                key_str = str(key)
+                value_str = str(PyLuaTblParser.__parse_python_data(value))
+                items_container.append(''.join([key_str, " = ", value_str]))
+        items_container.append("},")
+        return ''.join(items_container)
+
+
+    @staticmethod
+    def __parse_python_list(python_list_data):
+
+        item_container = []
+        for value in python_list_data:
+            if value is None:
+                item_container.append("nil")
+            elif value is True:
+                item_container.append("true")
+            elif value is False:
+                item_container.append("false")
+            else:
+                item_container.append(str(value))
+        return ','.join(item_container) + ','
+
