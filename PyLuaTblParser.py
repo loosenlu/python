@@ -1,75 +1,5 @@
 
 
-<<<<<<< HEAD
-
-def extrat_dict_item(lua_table, start_index):
-    '''
-        return  a dict_item range[start_index, end_index)
-    '''
-    cur_index = start_index
-    first_comma_index = lua_table.find(',', start_index)
-    first_braket_index = lua_table.find('{', start_index)
-    if first_comma_index < first_braket_index | first_comma_index == -1:
-        return start_index, first_comma_index
-
-
-    left_braket_num = 0
-    while cur_index < len(lua_table):
-
-        if lua_table[cur_index] == '{':
-            left_braket_num += 1
-        elif lua_table[cur_index] == '}':
-            left_braket_num -= 1
-            # It means the '{' is marched
-            if left_braket_num == 0:
-                break
-        cur_index += 1
-
-    return first_braket_index + 1, cur_index
-
-
-
-def str_resolve(lua_table):
-
-    is_dict = False
-    component_container = []
-    cur_index = pre_index = 0
-    while cur_index < len(lua_table):
-
-        if lua_table[cur_index] == '=':
-
-            is_dict = True
-            dict_item_key = lua_table[pre_index:cur_index]
-
-            item_start, item_end = extrat_dict_item(lua_table, cur_index + 1)
-            dict_item_value = lua_table[item_start: item_end]
-            component_container.append({dict_item_key.strip():dict_item_value.strip()})
-            cur_index = item_end + 1
-            pre_index = cur_index
-            continue
-        elif lua_table[cur_index] == ',':
-
-            if pre_index == cur_index:
-                cur_index += 1
-                pre_index = cur_index
-                continue
-            list_item = lua_table[pre_index:cur_index]
-            component_container.append(list_item.strip())
-            pre_index = cur_index + 1
-            cur_index += 1
-            continue
-        cur_index += 1
-    return component_container
-
-
-
-lua_table = '{array = {65,23,5,},\
-            dict = {mixed = {43,54.33,false,9,string = "value",},\
-                array = {3,6,4,},string = "value",},}'
-l = str_resolve(lua_table)
-print l
-
-=======
 class PyLuaTblParser(object):
     """The PyLuaTblParser is used to convert between
     lua table(string format) and python dict.
@@ -88,10 +18,48 @@ class PyLuaTblParser(object):
         else:
             # check whether lua_table is a valid
             # lua table string.
-            if PyLuaTblParser.is_lua_table(self):
+            if :
                 pass
             else:
-                raise Exception
+                raise ValueError, "The lua table is invalid!"
+
 
     
->>>>>>> f9fb5ab085b022d3173cd0f96cfd52f3dbec52f2
+    @staticmethod
+    def is_lua_table(lua_table):
+        """check whether the lua table is legal
+    
+        Here, this function mainly check two kind of errors.
+        1. Braces are not martch;
+        2. "xxxx{}xxxx". x represents letters.
+    
+        Args:
+            lua_table: a lua_table need to check
+        Returns:
+            a bool value
+        """
+        first_left_brace_index = lua_table.find('{')
+        last_right_brace_index = lua_table.rfind('}')
+        if (first_left_brace_index == -1 or
+                last_right_brace_index == -1):
+            return False
+        
+        cur_index = 0
+        while cur_index < first_left_brace_index:
+            if not lua_table[cur_index].isspace():
+                return False
+            
+        cur_index = last_right_brace_index
+        while cur_index < len(lua_table):
+            if not lua_table[cur_index].isspace():
+                return False
+            
+        cur_index = left_brace_number = 0
+        while cur_index < len(lua_table):
+            if lua_table[cur_index] == '{':
+                left_brace_number += 1
+            elif lua_table[cur_index] == '}':
+                left_brace_number -= 1
+            
+        return (True if left_brace_number == 0
+                else False)
