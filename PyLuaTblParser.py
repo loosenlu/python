@@ -67,3 +67,4 @@ lua_table = '{array = {65,23,5,},\
                 array = {3,6,4,},string = "value",},}'
 l = str_resolve(lua_table)
 print l
+
