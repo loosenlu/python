@@ -51,19 +51,57 @@ class PyLuaTblParser(object):
         return self.lua_table
 
 
+    def __getitem__(self, index):
+        try:
+            return self.lua_table_dict[index]
+        except IndexError, KeyError:
+            raise KeyError, "Don't have keyword!'"
+
+
+    def __setitem__(self, index, value):
+
+        if isinstance(self.lua_table_dict, list):
+            item_container = {}
+            cur_index = 0
+            while cur_index < len(self.lua_table_dict):
+                item_container[cur_index + 1] = \
+                    self.lua_table_dict[cur_index]
+                cur_index += 1
+            self.lua_table_dict = item_container
+        self.lua_table_dict[index] = value
+        self.consistency = False
+
+
+    def update(self, update_dict):
+
+        if isinstance(self.lua_table_dict, list):
+            item_container = {}
+            cur_index = 0
+            while cur_index < len(self.lua_table_dict):
+                item_container[cur_index + 1] = \
+                    self.lua_table_dict[cur_index]
+                cur_index += 1
+            self.lua_table_dict = item_container
+        self.lua_table_dict.update(update_dict)
+        self.consistency = False
+
+
     def __synchronize_lua_table(self):
         """synchronize the self.lua_table.
 
         Here,
         """
-        dict_items = self.lua_table_dict.items()
-        for key, value in dict_items:
-            if isinstance(key, int):
-                pass
-            elif isinstance(key, str):
-                pass
-            else:
-                continue
+        if isinstance(self.lua_table_dict, list):
+
+            self.lua_table = \
+                ''.join(['{',
+                         PyLuaTblParser.__parse_python_list(self.lua_table_dict),
+                         '}'])
+            self.consistency = True
+        else:
+            self.lua_table = \
+                PyLuaTblParser.__parse_python_dict(self.lua_table_dict)
+            self.consistency = True
 
 
     @staticmethod
@@ -266,7 +304,20 @@ class PyLuaTblParser(object):
 
     @staticmethod
     def __parse_python_data(python_data):
-        pass
+
+        if python_data is None:
+            return "nil,"
+        elif python_data is True:
+            return "true,"
+        elif python_data is False:
+            return "false,"
+        elif (isinstance(python_data, int) or
+              isinstance(python_data, str)):
+            return str(python_data)
+        elif isinstance(python_data, dict):
+            return PyLuaTblParser.__parse_python_dict(python_data)
+        elif isinstance(python_data, list):
+            return PyLuaTblParser.__parse_python_list(python_data)
 
 
     @staticmethod
@@ -279,7 +330,7 @@ class PyLuaTblParser(object):
                 continue
             else:
                 key_str = str(key)
-                value_str = str(PyLuaTblParser.__parse_python_data(value))
+                value_str = PyLuaTblParser.__parse_python_data(value)
                 items_container.append(''.join([key_str, " = ", value_str]))
         items_container.append("},")
         return ''.join(items_container)
