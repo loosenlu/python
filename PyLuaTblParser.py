@@ -306,13 +306,14 @@ class PyLuaTblParser(object):
     def __parse_python_data(python_data):
 
         if python_data is None:
-            return "nil,"
+            return "nil"
         elif python_data is True:
-            return "true,"
+            return "true"
         elif python_data is False:
-            return "false,"
+            return "false"
         elif (isinstance(python_data, int) or
-              isinstance(python_data, str)):
+              isinstance(python_data, str) or
+              isinstance(python_data, float)):
             return str(python_data)
         elif isinstance(python_data, dict):
             return PyLuaTblParser.__parse_python_dict(python_data)
@@ -323,7 +324,7 @@ class PyLuaTblParser(object):
     @staticmethod
     def __parse_python_dict(python_dict_data):
 
-        items_container = ['{']
+        items_container = []
         for key, value in python_dict_data.items():
             if not (isinstance(key, int) or
                     isinstance(key, str)):
@@ -332,22 +333,21 @@ class PyLuaTblParser(object):
                 key_str = str(key)
                 value_str = PyLuaTblParser.__parse_python_data(value)
                 items_container.append(''.join([key_str, " = ", value_str]))
-        items_container.append("},")
-        return ''.join(items_container)
+        return ''.join(['{', ','.join(items_container), '},'])
 
 
     @staticmethod
     def __parse_python_list(python_list_data):
 
-        item_container = []
+        items_container = []
         for value in python_list_data:
             if value is None:
-                item_container.append("nil")
+                items_container.append("nil")
             elif value is True:
-                item_container.append("true")
+                items_container.append("true")
             elif value is False:
-                item_container.append("false")
+                items_container.append("false")
             else:
-                item_container.append(str(value))
-        return ','.join(item_container) + ','
+                items_container.append(str(value))
+        return ''.join(['{', ','.join(items_container), '},'])
 
