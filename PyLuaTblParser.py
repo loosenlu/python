@@ -1,4 +1,6 @@
 
+import copy
+
 
 class PyLuaTblParser(object):
     """The PyLuaTblParser is used to convert between
@@ -51,6 +53,29 @@ class PyLuaTblParser(object):
         return self.lua_table
 
 
+    def loadDict(self, d):
+        """load a python dict and update.
+
+        """
+        self.lua_table_dict = copy.deepcopy(d)
+        self.__update_lua_table_dict()
+        self.consistency = False
+
+
+    def dumpDict(self):
+        """return a python dict
+
+        """
+        return copy.deepcopy(self.lua_table_dict)
+
+
+    def loadLuaTable(self, f):
+        """load a lua table(string format) from a file.
+        
+        """
+        
+
+
     def __getitem__(self, index):
         try:
             return self.lua_table_dict[index]
@@ -83,25 +108,24 @@ class PyLuaTblParser(object):
                 cur_index += 1
             self.lua_table_dict = item_container
         self.lua_table_dict.update(update_dict)
+        self.__update_lua_table_dict()
         self.consistency = False
 
 
+    def __update_lua_table_dict(self):
+
+        for i in self.lua_table_dict.iterkeys():
+            if not (isinstance(i, int) or
+                    isinstance(i, float) or
+                    isinstance(i, str)):
+                del self.lua_table_dict[i]
+
+
     def __synchronize_lua_table(self):
-        """synchronize the self.lua_table.
 
-        Here,
-        """
-        if isinstance(self.lua_table_dict, list):
-
-            self.lua_table = \
-                ''.join(['{',
-                         PyLuaTblParser.__parse_python_list(self.lua_table_dict),
-                         '}'])
-            self.consistency = True
-        else:
-            self.lua_table = \
-                PyLuaTblParser.__parse_python_dict(self.lua_table_dict)
-            self.consistency = True
+        self.lua_table = \
+            PyLuaTblParser.__parse_python_data(self.lua_table_dict)
+        self.consistency = True
 
 
     @staticmethod
@@ -172,17 +196,17 @@ class PyLuaTblParser(object):
             if lua_table[cur_index] == '=':
                 is_dict = True
                 value_start, value_end = \
-                    PyLuaTblParser.__extract_dict_value(lua_table,
-                                                        cur_index + 1)
+                    PyLuaTblParser.__acquire_dict_value_range(lua_table,
+                                                              cur_index + 1)
                 dict_key = lua_table[pre_index:cur_index].strip()
-                dict_key = PyLuaTblParser.__subscript_convert(dict_key)
+                dict_key = PyLuaTblParser.__extract_dict_key(dict_key)
                 dict_value = lua_table[value_start:value_end]
                 dict_value = PyLuaTblParser.__parse_lua_table(dict_value)
 
-                pre_index = value_end + 1
+                pre_index = value_end
                 cur_index = pre_index
 
-                if dict_value != None:
+                if not dict_value is None:
                     component_container.append({dict_key:dict_value})
                 continue
 
@@ -193,7 +217,7 @@ class PyLuaTblParser(object):
                     continue
                 list_item = lua_table[pre_index:cur_index].strip()
                 component_container.append(
-                    PyLuaTblParser.__value_convert(list_item))
+                    PyLuaTblParser.__item_convert(list_item))
                 pre_index = cur_index + 1
 
             cur_index += 1
@@ -206,7 +230,7 @@ class PyLuaTblParser(object):
 
 
     @staticmethod
-    def __extract_dict_value(table_str, start_index):
+    def __acquire_dict_value_range(table_str, start_index):
         """ todo
         """
         # judge whether the dict value part in a pair of braces
@@ -233,6 +257,29 @@ class PyLuaTblParser(object):
 
 
     @staticmethod
+    def __extract_dict_key(key_str):
+        """extract dict items' key partition.
+
+        lua table key has several format:
+        1. [key] = value;
+        2. ["key"] = Value;
+        3. key = value
+        """
+        key_str = key_str.strip()
+        if key_str[0] == '[' and key_str[-1] == ']':
+            key_str = key_str.strip("[]")
+            if key_str[0] == '"' and key_str[-1] == '"':
+                key_str = key_str.strip('""')
+                return key_str
+            elif PyLuaTblParser.__is_int(key_str):
+                return int(key_str)
+            elif PyLuaTblParser.__is_float(key_str):
+                return float(key_str)
+        else:
+            return key_str
+
+
+    @staticmethod
     def __is_int(number_str):
         try:
             int(number_str)
@@ -251,40 +298,34 @@ class PyLuaTblParser(object):
 
 
     @staticmethod
-    def __subscript_convert(subscript_str):
-        if PyLuaTblParser.__is_int(subscript_str):
-            return int(subscript_str)
-        elif PyLuaTblParser.__is_float(subscript_str):
-            return float(subscript_str)
-        else:
-            return subscript_str
-
-
-    @staticmethod
-    def __value_convert(value_str):
+    def __item_convert(item_str):
         """convert the value to appropriate type.
 
-        Here, There are four different situation:
-        bool, number, string, nil
+        Here, There are 4 data types:
+        number(int, float), bool ,string, nil
 
         Args:
-            value_str: a value_str
+            item_str: a base item(string format)
         Returns:
-            return a appropriate format
+            return a appropriate python type
         """
-        if PyLuaTblParser.__is_int(value_str):   # int
-            return int(value_str)
-        elif PyLuaTblParser.__is_float(value_str):   # float
-            return float(value_str)
-        elif value_str == "true":   # bool value
+        # number type
+        if PyLuaTblParser.__is_int(item_str):   # int
+            return int(item_str)
+        elif PyLuaTblParser.__is_float(item_str):   # float
+            return float(item_str)
+        # bool type
+        elif item_str == "true":
             return True
-        elif value_str == "false":
+        elif item_str == "false":
             return False
-        elif value_str == 'nil':
+        # nil
+        elif item_str == 'nil':
             return None
+        # string
         else:
             # For string value, delete the '' and ""
-            return value_str.strip("''\"\"")
+            return item_str.strip("''\"\"")
 
 
     @staticmethod
@@ -311,8 +352,9 @@ class PyLuaTblParser(object):
             return "true"
         elif python_data is False:
             return "false"
+        elif isinstance(python_data, str):
+            return ''.join(['"', python_data, '"'])
         elif (isinstance(python_data, int) or
-              isinstance(python_data, str) or
               isinstance(python_data, float)):
             return str(python_data)
         elif isinstance(python_data, dict):
@@ -326,14 +368,17 @@ class PyLuaTblParser(object):
 
         items_container = []
         for key, value in python_dict_data.items():
-            if not (isinstance(key, int) or
-                    isinstance(key, str)):
-                continue
-            else:
-                key_str = str(key)
+            if isinstance(key, int):
+                key_str = ''.join(['[', str(key), ']'])
                 value_str = PyLuaTblParser.__parse_python_data(value)
                 items_container.append(''.join([key_str, " = ", value_str]))
-        return ''.join(['{', ','.join(items_container), '},'])
+            elif isinstance(key, str):
+                key_str = key
+                value_str = PyLuaTblParser.__parse_python_data(value)
+                items_container.append(''.join([key_str, " = ", value_str]))
+            else:
+                continue
+        return ''.join(['{', ','.join(items_container), '}'])
 
 
     @staticmethod
@@ -349,5 +394,5 @@ class PyLuaTblParser(object):
                 items_container.append("false")
             else:
                 items_container.append(str(value))
-        return ''.join(['{', ','.join(items_container), '},'])
+        return ''.join(['{', ','.join(items_container), '}'])
 
