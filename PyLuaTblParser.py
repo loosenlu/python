@@ -71,9 +71,24 @@ class PyLuaTblParser(object):
 
     def loadLuaTable(self, f):
         """load a lua table(string format) from a file.
-        
+
         """
-        
+        with open(f, 'r') as f:
+            lua_table = f.read()
+            PyLuaTblParser.__init__(self, lua_table)
+
+
+    def dumpLuaTable(self, f):
+        """store the lua table(string format) in file f.
+
+        """
+        if not self.consistency:
+            self.__synchronize_lua_table()
+        with open(f, 'w') as f:
+            if not self.consistency:
+                self.__synchronize_lua_table()
+            f.write(self.lua_table)
+
 
 
     def __getitem__(self, index):
