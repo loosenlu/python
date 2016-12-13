@@ -59,17 +59,21 @@ class PyLuaTblParser(object):
         return cur_index
 
 
-    def __parse_lua_dict_element(self, cur_index):
+    def __parse_lua_string(self, cur_index):
         pass
 
-    
-    def __parse_
 
+    def __parse_lua_basic_exp(self, cur_index):
+        pass
+
+
+    def __parse_lua_compound_exp(self, cur_index):
+        pass
 
 
     def __parse_lua_table(self, cur_index):
         """Parse the lua table(string format)
-        
+
         About lua table constructors, there has 3 forms:
         1. [exp1] = exp2:
             In this program, we assume:
@@ -78,9 +82,10 @@ class PyLuaTblParser(object):
                 or table;
         2. name = exp:
             is equal to ["name"] = exp;
+            name actually is a identifier--underline, number, letters
         3 exp1, exp2, ..., expn:
             each exp belongs to nil, bool(true, flase), number, string;
-        
+
         About lua string, there also has 3 forms:
         1. "string"
         2. 'string'
@@ -117,50 +122,26 @@ class PyLuaTblParser(object):
                 # Nested table
                 (cur_index, nested_table_result) = self.__parse_lua_table(cur_index)
                 token_container.append(nested_table_result)
-            elif self.lua_table_str[cur_index:cur_index+2] == "[[":
-                pass
+            elif (self.lua_table_str[cur_index] == '"' or
+                  self.lua_table_str[cur_index] == "'" or
+                  self.lua_table_str[cur_index:cur_index+2] == "[["):
+                # string
+                (cur_index, string_results)  = self.__parse_lua_string(cur_index)
             elif self.lua_table_str[cur_index] == '[':
-                pass
+                # for [exp1] = exp2
+                (cur_index, compound_exp_result) = self.__parse_lua_compound_exp(cur_index)
             elif self.lua_table_str[cur_index] == '=':
-                is_dict = True
-                (cur_index, value) = self.__parse_value(cur_index)
+                # for name = exp
+                cur_index += 1
                 key = token_container.pop()
-                token_container.append(DictItem(key, value))
+                (cur_index, value) = self.__parse_lua_basic_exp(cur_index)
+                item = DictItem(key, value)
+                token_container.append(item)
+            elif (self.lua_table_str[cur_index] == '_' or
+                  self.lua_table_str[cur_index].isalpha()):
+                (cur_index, basic_exp_result) = self.__parse_lua_basic_exp(cur_index)
             else:
-                (cur_index, value) = self.__parse_value(cur_index)
-                token_container.append(value)
-
-
-    def __find_matched_str(self, cur_index, matched_str):
-
-        matched_len = len(matched_str)
-        length = len(self.lua_table_str) - matched_len + 1
-        while cur_index < length:
-            if self.lua_table_str[cur_index:cur_index+matched_len] == matched_str:
-                return cur_index
-            cur_index += 1
-        raise LuaError("The lua table is invalid")
-
-
-
-    def __parse_lua_table_key(self, key_beg, key_end):
-
-        if key_beg + 1 == key_end:
-            # [empty key] 
-            raise LuaError("The lua table in invalid")
-        elif key_beg + 2 < key_end:
-            if (self.lua_table_str[key_beg] == '"' or
-                self.lua_table_str[key_beg] == "'"):
-                token_beg = key_beg + 1
-
-
-
-    def __parse_lua_str_data(self, str_beg, str_end):
-        return self.lua_table_str[str_beg, str_end]
-
-
-    def __parse_lua_other_data(self, data_beg, data_end):
-        pass
+                raise LuaError("The lua table is invalid!")
 
 
 
