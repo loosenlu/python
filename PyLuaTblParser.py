@@ -6,11 +6,11 @@ class LuaError(Exception):
     pass
 
 
-class DictItem(object):
+class Pairs(object):
 
     def __init__(self, first, second):
-        self.key = first
-        self.value = second
+        self.first = first
+        self.second = second
 
 
 class PyLuaTblParser(object):
@@ -91,6 +91,29 @@ class PyLuaTblParser(object):
                 return (cur_index, string_result)
 
 
+
+    def __parse_lua_number(self, cur_index):
+        """Parse lua number
+
+        There are 2 kinds of number
+        1. int--> +16, 0, -16,...;
+        2. float--> 0.4, 4.57e-3, 0.3e12, 5e+20
+        """
+        NUMBER_LETTERS_SET = set("+-0123456789abcedfABCDEFxX.")
+        length = len(self.lua_table_str)
+        num_beg = cur_index
+        while (cur_index < length and
+               self.lua_table_str[cur_index] in NUMBER_LETTERS_SET):
+            cur_index += 1
+        num_str = self.lua_table_str[num_beg:cur_index]
+        number_result = PyLuaTblParser.__str2num(num_str)
+        if number_result is None:
+            raise LuaError("Lua table is invalid!")
+        else:
+            return (cur_index, number_result)
+
+
+
     def __parse_lua_basic_exp(self, cur_index):
         """Parse the basic expression
 
@@ -101,24 +124,33 @@ class PyLuaTblParser(object):
         4. string
         5. table
         """
+        NUMBER_START_LETTERS_SET = set("+-0123456789")
 
         if (self.lua_table_str[cur_index] == '"' or
             self.lua_table_str[cur_index] == "'" or
             self.lua_table_str[cur_index:cur_index+2] == "[["):
+            # FOR string
             (cur_index, string_result) = self.__parse_lua_string(cur_index)
             return (cur_index, string_result)
         elif self.lua_table_str[cur_index] == '{':
+            # FOR table
             (cur_index, table_result) = self.__parse_lua_table(cur_index)
             return (cur_index, table_result)
-        elif self.lua_table_str[cur_index] == '0123456789':
-            pass
+        elif self.lua_table_str[cur_index] in NUMBER_START_LETTERS_SET:
+            #FOR number
+            (cur_index, number_result) = self.__parse_lua_number(cur_index)
+            return (cur_index, number_result)
         elif self.lua_table_str[cur_index] == 't':
+            # FOR true
             return (cur_index + 4, True)
         elif self.lua_table_str[cur_index] == 'f':
+            # FOR false
             return (cur_index + 5, False)
-        elif self.lua_table_str[cur_index] == 'n': # nil
+        elif self.lua_table_str[cur_index] == 'n': 
+            # FOR nil
             return (cur_index + 3, None)
         else:
+            # Invalid letter
             raise LuaError("Lua table is invalid!")
 
 
@@ -145,8 +177,23 @@ class PyLuaTblParser(object):
         cur_index = self.__skip_unrelated_partition(cur_index)
 
         (cur_index, exp2) = self.__parse_lua_basic_exp(cur_index)
-        compound_exp = DictItem(exp1, exp2)
+        compound_exp = Pairs(exp1, exp2)
         return (cur_index, compound_exp)
+
+
+    def __parse_lua_name(self, cur_index):
+        """Parse lua name(identifier)
+
+        Names (also called identifiers) in Lua can be any string of letters, digits,
+        and underscores, not beginning with a digit and not being a reserved word.
+        """
+        length = len(self.lua_table_str)
+        name_beg = cur_index
+        while (cur_index < length and
+               (self.lua_table_str[cur_index] == '_'
+                or self.lua_table_str[cur_index].isalpha())):
+            cur_index += 1
+        return (cur_index, self.lua_table_str[name_beg, cur_index])
 
 
     def __parse_lua_table(self, cur_index):
@@ -159,7 +206,7 @@ class PyLuaTblParser(object):
                 or table;
         2. name = exp:
             is equal to ["name"] = exp;
-            name actually is a identifier--underline, number, letters
+            name actually is a identifier--underscores, number, letters
         3 exp1, exp2, ..., expn:
             each exp belongs to nil, bool(true, flase), number, string;
         About lua string, there also has 3 forms:
@@ -174,7 +221,7 @@ class PyLuaTblParser(object):
                 [exp1] = exp2
         and the other situations are invalid.
         """
-
+        NUMBER_START_LETTERS_SET = set("+-0123456789")
         token_container = []
         is_dict = False
         length = len(self.lua_table_str)
@@ -188,38 +235,41 @@ class PyLuaTblParser(object):
             cur_index = self.__skip_unrelated_partition(cur_index)
 
             if self.lua_table_str[cur_index] == '}':
-                # Table end
+                # FOR Table end
                 if is_dict:
                     token_container = PyLuaTblParser.__list2dict(
                         token_container)
                 return (cur_index + 1, token_container)
             elif self.lua_table_str[cur_index] == '{':
-                # Nested table
+                # FOR Nested table
                 (cur_index, nested_table_result) = self.__parse_lua_table(cur_index)
                 token_container.append(nested_table_result)
             elif (self.lua_table_str[cur_index] == '"' or
                   self.lua_table_str[cur_index] == "'" or
                   self.lua_table_str[cur_index:cur_index+2] == "[["):
-                # string
+                # FOR string
                 (cur_index, string_results) = self.__parse_lua_string(cur_index)
                 token_container.append(string_results)
             elif self.lua_table_str[cur_index] == '[':
-                # for [exp1] = exp2
+                # FOR [exp1] = exp2
                 (cur_index, compound_exp_result) = \
                         self.__parse_lua_compound_exp(cur_index)
                 token_container.append(compound_exp_result)
-            elif self.lua_table_str[cur_index] == '=':
-                # for name = exp
-                cur_index += 1
-                key = token_container.pop()
-                (cur_index, value) = self.__parse_lua_basic_exp(cur_index)
-                item = DictItem(key, value)
-                token_container.append(item)
+            elif self.lua_table_str[cur_index] in NUMBER_START_LETTERS_SET:
+                # FOR number
+                (cur_index, number_result) = self.__parse_lua_number(cur_index)
             elif (self.lua_table_str[cur_index] == '_' or
                   self.lua_table_str[cur_index].isalpha()):
-                (cur_index, basic_exp_result) = \
-                        self.__parse_lua_basic_exp(cur_index)
-                token_container.append(basic_exp_result)
+                # FOR name = exp
+                (cur_index, name) = self.__parse_lua_name(cur_index)
+                cur_index = self.__skip_unrelated_partition(cur_index)
+                if self.lua_table_str[cur_index] != '=':
+                    raise LuaError("Lua table is invalid!")
+                cur_index += 1
+                cur_index = self.__skip_unrelated_partition(cur_index)
+                (cur_index, exp) = self.__parse_lua_basic_exp(cur_index)
+                item = Pairs(name, exp)
+                token_container.append(item)
             else:
                 raise LuaError("Lua table is invalid!")
 
@@ -243,10 +293,26 @@ class PyLuaTblParser(object):
         dict_data = {}
         index = 1
         for item in list_data:
-            if isinstance(item, DictItem):
-                if not dict_data.has_key(item.key):
-                    dict_data[item.key] = item.value
+            if isinstance(item, Pairs):
+                if not dict_data.has_key(item.first):
+                    dict_data[item.first] = item.second
             else:
                 dict_data[index] = item
                 index += 1
         return dict_data
+
+
+    @classmethod
+    def __str2num(cls, num_str):
+        try:
+            # is int?
+            num = int(num_str)
+            return num
+        except ValueError:
+            try:
+                # is float?
+                num = float(num_str)
+                return num
+            except ValueError:
+                # invalid
+                return None
