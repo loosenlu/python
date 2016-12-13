@@ -72,7 +72,7 @@ class PyLuaTblParser(object):
             str_beg_index = cur_index
             cur_index = self.lua_table_str.find(end_lable, cur_index)
             if cur_index == -1:
-                raise LuaError("The lua table is invalid!")
+                raise LuaError("Lua table is invalid!")
             else:
                 string_result = self.lua_table_str[str_beg_index:cur_index]
                 cur_index += 1
@@ -84,15 +84,42 @@ class PyLuaTblParser(object):
             str_beg_index = cur_index
             cur_index = self.lua_table_str.find(end_lable, cur_index)
             if cur_index == -1:
-                raise LuaError("The lua table is invalid!")
+                raise LuaError("Lua table is invalid!")
             else:
                 string_result = self.lua_table_str[str_beg_index:cur_index]
                 cur_index += 2
                 return (cur_index, string_result)
 
 
-    def __parse_lua_basic_exp(self, beg_index, end_index):
-        pass
+    def __parse_lua_basic_exp(self, cur_index):
+        """Parse the basic expression
+
+        The basic expression has 5 situation:
+        1. nil
+        2. bool--> false, true
+        3. number--> int, float
+        4. string
+        5. table
+        """
+
+        if (self.lua_table_str[cur_index] == '"' or
+            self.lua_table_str[cur_index] == "'" or
+            self.lua_table_str[cur_index:cur_index+2] == "[["):
+            (cur_index, string_result) = self.__parse_lua_string(cur_index)
+            return (cur_index, string_result)
+        elif self.lua_table_str[cur_index] == '{':
+            (cur_index, table_result) = self.__parse_lua_table(cur_index)
+            return (cur_index, table_result)
+        elif self.lua_table_str[cur_index] == '0123456789':
+            pass
+        elif self.lua_table_str[cur_index] == 't':
+            return (cur_index + 4, True)
+        elif self.lua_table_str[cur_index] == 'f':
+            return (cur_index + 5, False)
+        elif self.lua_table_str[cur_index] == 'n': # nil
+            return (cur_index + 3, None)
+        else:
+            raise LuaError("Lua table is invalid!")
 
 
     def __parse_lua_compound_exp(self, cur_index):
@@ -104,19 +131,20 @@ class PyLuaTblParser(object):
             b). exp2 belongs to nil, bool(true, flase), number, string,
                 or table;
         """
-        length = len(self.lua_table_str)
         cur_index += 1
-        exp1_start = cur_index
-        cur_index = self.lua_table_str.find(']', cur_index)
-        exp1 = self.__parse_lua_basic_exp(exp1_start, cur_index)
+        cur_index = self.__skip_unrelated_partition(cur_index)
+        (cur_index, exp1) = self.__parse_lua_basic_exp(cur_index)
+        cur_index = self.__skip_unrelated_partition(cur_index)
+        if self.lua_table_str[cur_index] != ']':
+            raise LuaError("Lua table is invalid!")
 
         cur_index += 1
         cur_index = self.__skip_unrelated_partition(cur_index)
         if self.lua_table_str[cur_index] != '=':
-            raise LuaError("The lua table is invalid!")
+            raise LuaError("Lua table is invalid!")
         cur_index = self.__skip_unrelated_partition(cur_index)
 
-        (cur_index, exp2) = self.__parse_lua_basic_exp(cur_index, length)
+        (cur_index, exp2) = self.__parse_lua_basic_exp(cur_index)
         compound_exp = DictItem(exp1, exp2)
         return (cur_index, compound_exp)
 
@@ -152,7 +180,7 @@ class PyLuaTblParser(object):
         length = len(self.lua_table_str)
         cur_index = self.__skip_unrelated_partition(cur_index)
         if self.lua_table_str[cur_index] != '{':
-            raise LuaError("The lua table is invalid!")
+            raise LuaError("Lua table is invalid!")
         cur_index += 1
 
         while cur_index < length:
@@ -184,16 +212,16 @@ class PyLuaTblParser(object):
                 # for name = exp
                 cur_index += 1
                 key = token_container.pop()
-                (cur_index, value) = self.__parse_lua_basic_exp(cur_index, length)
+                (cur_index, value) = self.__parse_lua_basic_exp(cur_index)
                 item = DictItem(key, value)
                 token_container.append(item)
             elif (self.lua_table_str[cur_index] == '_' or
                   self.lua_table_str[cur_index].isalpha()):
                 (cur_index, basic_exp_result) = \
-                        self.__parse_lua_basic_exp(cur_index, length)
+                        self.__parse_lua_basic_exp(cur_index)
                 token_container.append(basic_exp_result)
             else:
-                raise LuaError("The lua table is invalid!")
+                raise LuaError("Lua table is invalid!")
 
             cur_index = self.__skip_unrelated_partition(cur_index)
             if (self.lua_table_str[cur_index] == ',' or
@@ -202,8 +230,8 @@ class PyLuaTblParser(object):
             elif self.lua_table_str[cur_index] == '}':
                 continue
             else:
-                raise LuaError("The lua table is invalid!")
-        raise LuaError("The lua table is invalid!")
+                raise LuaError("Lua table is invalid!")
+        raise LuaError("Lua table is invalid!")
 
 
 
