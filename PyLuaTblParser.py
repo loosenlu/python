@@ -30,7 +30,7 @@ class PyLuaTblParser(object):
         if self.lua_table_str == "":
             self.lua_table_dict = {}
         else:
-            self.lua_table_str = self.__parse_lua_table(0)
+            self.lua_table_dict = self.__parse_lua_table(0)
         self.consistancy = True
 
 
@@ -62,7 +62,7 @@ class PyLuaTblParser(object):
 
     def dumpDict(self):
         """pass
-        
+
         """
         return copy.deepcopy(self.lua_table_dict)
 
@@ -260,6 +260,7 @@ class PyLuaTblParser(object):
         cur_index = self.__skip_unrelated_partition(cur_index)
         if self.lua_table_str[cur_index] != '=':
             raise LuaError("Lua table is invalid!")
+        cur_index += 1
         cur_index = self.__skip_unrelated_partition(cur_index)
 
         (cur_index, exp2) = self.__parse_lua_basic_exp(cur_index)
@@ -279,7 +280,7 @@ class PyLuaTblParser(object):
                (self.lua_table_str[cur_index] == '_'
                 or self.lua_table_str[cur_index].isalpha())):
             cur_index += 1
-        return (cur_index, self.lua_table_str[name_beg, cur_index])
+        return (cur_index, self.lua_table_str[name_beg:cur_index])
 
 
     def __parse_lua_table(self, cur_index):
@@ -338,15 +339,30 @@ class PyLuaTblParser(object):
                 token_container.append(string_results)
             elif self.lua_table_str[cur_index] == '[':
                 # FOR [exp1] = exp2
+                is_dict = True
                 (cur_index, compound_exp_result) = \
                         self.__parse_lua_compound_exp(cur_index)
                 token_container.append(compound_exp_result)
             elif self.lua_table_str[cur_index] in NUMBER_START_LETTERS_SET:
                 # FOR number
                 (cur_index, number_result) = self.__parse_lua_number(cur_index)
+                token_container.append(number_result)
+            elif self.lua_table_str[cur_index] == 'f':
+                # FOR false
+                cur_index += 5
+                token_container.append(False)
+            elif self.lua_table_str[cur_index] == 't':
+                # FOR true
+                cur_index += 4
+                token_container.append(True)
+            elif self.lua_table_str[cur_index] == 'n':
+                # FOR nil
+                cur_index += 3
+                token_container.append(None)
             elif (self.lua_table_str[cur_index] == '_' or
                   self.lua_table_str[cur_index].isalpha()):
                 # FOR name = exp
+                is_dict = True
                 (cur_index, name) = self.__parse_lua_name(cur_index)
                 cur_index = self.__skip_unrelated_partition(cur_index)
                 if self.lua_table_str[cur_index] != '=':

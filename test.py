@@ -25,7 +25,7 @@ b.loadLuaTable("/Users/loosen/Program/python/python/luatable")
 
 # print a.lua_table_dict
 # print b.lua_table_dict
-print c.lua_table
+print c.lua_table_str
 print "*" * 16
 print a.dump()
 
@@ -36,7 +36,7 @@ print id(c.lua_table_dict)
 print c.lua_table_dict == a.lua_table_dict
 
 print "--" * 16
-print c.lua_table
-print b.lua_table
+print c.lua_table_str
+print b.lua_table_str
 print c.lua_table_dict == b.lua_table_dict
 # print d.lua_table_dict
