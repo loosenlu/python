@@ -6,6 +6,11 @@ class LuaError(Exception):
     pass
 
 
+class PythonTypeError(Exception):
+    """Raise if there has python type Error"""
+    pass
+
+
 class Pairs(object):
 
     def __init__(self, first, second):
@@ -24,7 +29,75 @@ class PyLuaTblParser(object):
         self.lua_table_str = lua_table
         if self.lua_table_str == "":
             self.lua_table_dict = {}
-            self.consistancy = True
+        else:
+            self.lua_table_str = self.__parse_lua_table(0)
+        self.consistancy = True
+
+
+    def load(self, s):
+        """Load the s as lua table(string format)
+
+        """
+        self.lua_table_str = s
+        self.lua_table_dict = self.__parse_lua_table(0)
+
+
+    def dump(self):
+        """Return the lua table(string format)
+
+        """
+        if not self.consistancy:
+            self.lua_table_str = \
+                PyLuaTblParser.__parse_python_value(self.lua_table_dict)
+        return self.lua_table_str
+
+
+    def loadDict(self, d):
+        """pass
+
+        """
+        self.lua_table_dict = copy.deepcopy(d)
+        self.consistancy = False
+
+
+    def dumpDict(self):
+        """pass
+        
+        """
+        return copy.deepcopy(self.lua_table_dict)
+
+
+    def loadLuaTable(self, f):
+        """pass
+
+        """
+        with open(f, 'r') as f_oject:
+            lua_table = f_oject.read()
+            self.__init__(lua_table)
+
+
+    def dumpLuaTable(self, f):
+        """pass
+        
+        """
+        if not self.consistancy:
+            self.lua_table_str = \
+                PyLuaTblParser.__parse_python_value(self.lua_table_dict)
+        with open(f, 'w') as f_oject:
+            f_oject.write(self.lua_table_str)
+        
+
+
+    def __getitem__(self, index):
+        pass
+
+
+    def __setitem__(self, index, value):
+        pass
+
+
+    def update(self, update_dict):
+        pass
 
 
     def __skip_whitespaces(self, cur_index):
@@ -36,13 +109,26 @@ class PyLuaTblParser(object):
 
     def __skip_lua_comments(self, cur_index):
         """skip the lua comments
-        In lua, there has 2 kind of comments
+        In lua, there has 2 kinds of comments
         1. line comments;
             -- line comments\n
         2. block comments
-            a). --[[ comments block]]
-            b). --[===[ comments block ]===]
+            --[[ comments block]]
         """
+        if self.lua_table_str[cur_index:cur_index+4] == '--[[':
+            # block comments
+            cur_index += 4
+            cur_index = self.lua_table_str.find("]]", cur_index)
+            if cur_index == -1:
+                raise LuaError("Lua table is invalid!")
+            return cur_index + 2
+        else:
+            # line comments
+            cur_index += 2
+            cur_index = self.lua_table_str.find("\n", cur_index)
+            if cur_index == -1:
+                raise LuaError("Lua table is invalid!")
+            return cur_index
 
 
     def __skip_unrelated_partition(self, cur_index):
@@ -146,7 +232,7 @@ class PyLuaTblParser(object):
         elif self.lua_table_str[cur_index] == 'f':
             # FOR false
             return (cur_index + 5, False)
-        elif self.lua_table_str[cur_index] == 'n': 
+        elif self.lua_table_str[cur_index] == 'n':
             # FOR nil
             return (cur_index + 3, None)
         else:
@@ -284,6 +370,48 @@ class PyLuaTblParser(object):
         raise LuaError("Lua table is invalid!")
 
 
+    @classmethod
+    def __parse_python_dict(cls, python_dict):
+
+        container = []
+        for k, v in python_dict.iteritems():
+            if isinstance(k, int):
+                key = ''.join(['[', str(k), ']'])
+                value = cls.__parse_python_value(v)
+                container.append(''.join([key, " = ", value]))
+            elif isinstance(k, str):
+                key = k
+                value = cls.__parse_python_value(v)
+                container.append(''.join([key, " = ", value]))
+        return '{' + ','.join(container) + '}'
+
+
+    @classmethod
+    def __parse_python_list(cls, python_list):
+
+        container = []
+        for i in python_list:
+            container.append(cls.__parse_python_value(i))
+        return '[' + ','.join(container) + ']'
+
+
+    @classmethod
+    def __parse_python_value(cls, python_value):
+        if python_value is None:
+            return "nil"
+        elif python_value is False:
+            return "false"
+        elif python_value is True:
+            return "true"
+        elif (isinstance(python_value, int) or
+              isinstance(python_value, float)):
+            return str(python_value)
+        elif isinstance(python_value, list):
+            return cls.__parse_python_list(python_value)
+        elif isinstance(python_value, dict):
+            return cls.__parse_python_dict(python_value)
+        else:
+            raise PythonTypeError("Python type errors!")
 
 
     @classmethod
@@ -294,7 +422,8 @@ class PyLuaTblParser(object):
         index = 1
         for item in list_data:
             if isinstance(item, Pairs):
-                if not dict_data.has_key(item.first):
+                if (not dict_data.has_key(item.first) and
+                    item.second is not None):
                     dict_data[item.first] = item.second
             else:
                 dict_data[index] = item
