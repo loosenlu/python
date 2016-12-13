@@ -324,7 +324,7 @@ class PyLuaTblParser(object):
     def __parse_python_dict(python_dict_data):
 
         items_container = ['{']
-        for key, value in python_dict_data.items():
+        for key, value in python_dict_data.items().sort():
             if not (isinstance(key, int) or
                     isinstance(key, str)):
                 continue
