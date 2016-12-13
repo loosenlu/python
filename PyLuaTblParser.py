@@ -30,7 +30,7 @@ class PyLuaTblParser(object):
         if self.lua_table_str == "":
             self.lua_table_dict = {}
         else:
-            self.lua_table_dict = self.__parse_lua_table(0)
+            end_index, self.lua_table_dict = self.__parse_lua_table(0)
         self.consistancy = True
 
 
@@ -39,7 +39,7 @@ class PyLuaTblParser(object):
 
         """
         self.lua_table_str = s
-        self.lua_table_dict = self.__parse_lua_table(0)
+        end_index, self.lua_table_dict = self.__parse_lua_table(0)
 
 
     def dump(self):
@@ -422,6 +422,8 @@ class PyLuaTblParser(object):
         elif (isinstance(python_value, int) or
               isinstance(python_value, float)):
             return str(python_value)
+        elif isinstance(python_value, str):
+            return python_value
         elif isinstance(python_value, list):
             return cls.__parse_python_list(python_value)
         elif isinstance(python_value, dict):
