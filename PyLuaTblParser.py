@@ -1,4 +1,3 @@
-
 import copy
 
 
@@ -17,12 +16,9 @@ class DictItem(object):
 class PyLuaTblParser(object):
     """The PyLuaTblParser is used to convert between lua table
     (string format) and python dict.
-
     Parse the lua table(string format) and stored in a python dict;
     Or convert the python dict into a lua table.
-
     Attributes:
-
     """
     def __init__(self, lua_table=""):
         self.lua_table_str = lua_table
@@ -40,7 +36,6 @@ class PyLuaTblParser(object):
 
     def __skip_lua_comments(self, cur_index):
         """skip the lua comments
-
         In lua, there has 2 kind of comments
         1. line comments;
             -- line comments\n
@@ -73,7 +68,6 @@ class PyLuaTblParser(object):
 
     def __parse_lua_table(self, cur_index):
         """Parse the lua table(string format)
-
         About lua table constructors, there has 3 forms:
         1. [exp1] = exp2:
             In this program, we assume:
@@ -85,12 +79,10 @@ class PyLuaTblParser(object):
             name actually is a identifier--underline, number, letters
         3 exp1, exp2, ..., expn:
             each exp belongs to nil, bool(true, flase), number, string;
-
         About lua string, there also has 3 forms:
         1. "string"
         2. 'string'
         3. [[string]]
-
         Hence, There has several function to parse lua table
         1. string --> __parse_lua_string
         2. basic expression --> __parse_lua_basic_exp
@@ -208,7 +200,6 @@ class PyLuaTblParser(object):
     @classmethod
     def __list2dict(cls, list_data):
         """convert list to dict
-
         """
         dict_data = {}
         index = 1
@@ -219,64 +210,4 @@ class PyLuaTblParser(object):
             else:
                 dict_data[index] = item
                 index += 1
-<<<<<<< HEAD
-        return converted_result
-
-
-    @staticmethod
-    def __parse_python_data(python_data):
-
-        if python_data is None:
-            return "nil,"
-        elif python_data is True:
-            return "true,"
-        elif python_data is False:
-            return "false,"
-        elif (isinstance(python_data, int) or
-              isinstance(python_data, str)):
-            return str(python_data)
-        elif isinstance(python_data, dict):
-            return PyLuaTblParser.__parse_python_dict(python_data)
-        elif isinstance(python_data, list):
-            return PyLuaTblParser.__parse_python_list(python_data)
-
-
-    @staticmethod
-    def __parse_python_dict(python_dict_data):
-
-        items_container = ['{']
-        for key, value in python_dict_data.items().sort():
-            if not (isinstance(key, int) or
-                    isinstance(key, str)):
-                continue
-            else:
-                key_str = str(key)
-                value_str = PyLuaTblParser.__parse_python_data(value)
-                items_container.append(''.join([key_str, " = ", value_str]))
-        items_container.append("},")
-        return ''.join(items_container)
-
-
-    @staticmethod
-    def __parse_python_list(python_list_data):
-
-        item_container = []
-        for value in python_list_data:
-            if value is None:
-                item_container.append("nil")
-            elif value is True:
-                item_container.append("true")
-            elif value is False:
-                item_container.append("false")
-            else:
-                item_container.append(str(value))
-        return ','.join(item_container) + ','
-=======
         return dict_data
-
-
-
-
-
->>>>>>> 863bf048dd7ce0224615747299695802990a8fa3
-
