@@ -141,8 +141,8 @@ class PyLuaTblParser(object):
 
 
 
-    def __parse_lua_string(self, cur_index):
-        """Parse the lua string
+    def __parse_lua_string_unit(self, cur_index):
+        """Parse the lua string unit(without concat)
 
         About lua string, there also has 3 forms:
         1. "string"
@@ -176,6 +176,34 @@ class PyLuaTblParser(object):
                 cur_index += 2
                 return (cur_index, string_result)
 
+
+    def __parse_lua_string(self, cur_index):
+        """Parse the lua string(with concat)
+
+        And process string concat:
+        "string1 " .. [[string2]] == "string1 string2"
+        """
+        length = len(self.lua_table_str)
+        string_container = []
+        while cur_index < length:
+            (cur_index, string_item) = self.__parse_lua_string_unit(cur_index)
+            string_container.append(string_item)
+            cur_index = self.__skip_unrelated_partition(cur_index)
+            if self.lua_table_str[cur_index:cur_index+2] != "..":
+                break
+            else:
+                # FOR concat
+                cur_index += 2
+                cur_index = self.__skip_unrelated_partition(cur_index)
+                if (self.lua_table_str[cur_index] == '"' or
+                    self.lua_table_str[cur_index] == "'" or
+                    self.lua_table_str[cur_index:cur_index+2] == "[["):
+                    continue
+                else:
+                    # FOR "string" .. is invalid
+                    raise LuaError("Lua table is invalid!")
+        string_result = ''.join(string_container)
+        return (cur_index, string_result)
 
 
     def __parse_lua_number(self, cur_index):
@@ -226,13 +254,13 @@ class PyLuaTblParser(object):
             #FOR number
             (cur_index, number_result) = self.__parse_lua_number(cur_index)
             return (cur_index, number_result)
-        elif self.lua_table_str[cur_index] == 't':
+        elif self.lua_table_str[cur_index: cur_index + 4] == "true":
             # FOR true
             return (cur_index + 4, True)
-        elif self.lua_table_str[cur_index] == 'f':
+        elif self.lua_table_str[cur_index: cur_index + 5] == "false":
             # FOR false
             return (cur_index + 5, False)
-        elif self.lua_table_str[cur_index] == 'n':
+        elif self.lua_table_str[cur_index: cur_index + 3] == "nil":
             # FOR nil
             return (cur_index + 3, None)
         else:
@@ -347,15 +375,15 @@ class PyLuaTblParser(object):
                 # FOR number
                 (cur_index, number_result) = self.__parse_lua_number(cur_index)
                 token_container.append(number_result)
-            elif self.lua_table_str[cur_index] == 'f':
+            elif self.lua_table_str[cur_index:cur_index+5] == 'false':
                 # FOR false
                 cur_index += 5
                 token_container.append(False)
-            elif self.lua_table_str[cur_index] == 't':
+            elif self.lua_table_str[cur_index:cur_index+4] == 'true':
                 # FOR true
                 cur_index += 4
                 token_container.append(True)
-            elif self.lua_table_str[cur_index] == 'n':
+            elif self.lua_table_str[cur_index:cur_index+3] == 'nil':
                 # FOR nil
                 cur_index += 3
                 token_container.append(None)
