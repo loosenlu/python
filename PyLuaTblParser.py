@@ -128,7 +128,7 @@ class PyLuaTblParser(object):
             cur_index = self.lua_table_str.find("\n", cur_index)
             if cur_index == -1:
                 raise LuaError("Lua table is invalid!")
-            return cur_index
+            return cur_index + 1
 
 
     def __skip_unrelated_partition(self, cur_index):
@@ -408,6 +408,7 @@ class PyLuaTblParser(object):
                     self.lua_table_str[cur_index] == ';'):
                 cur_index += 1
             elif self.lua_table_str[cur_index] == '}':
+                # FOR table last item {,...,item}
                 continue
             else:
                 raise LuaError("Lua table is invalid!")
