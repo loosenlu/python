@@ -156,7 +156,19 @@ class PyLuaTblParser(object):
             end_lable = self.lua_table_str[cur_index]
             cur_index += 1
             str_beg_index = cur_index
+            # cur_index = self.lua_table_str.find(end_lable, cur_index)
+            # if cur_index == -1:
+            #     raise LuaError("Lua table is invalid!")
+            # else:
+            #     string_result = self.lua_table_str[str_beg_index:cur_index]
+            #     cur_index += 1
+            #     return (cur_index, string_result)
+
             cur_index = self.lua_table_str.find(end_lable, cur_index)
+            while (cur_index != -1 and
+                   self.lua_table_str[cur_index - 1] == '\\'):
+                cur_index = cur_index = self.lua_table_str.find(end_lable,
+                                                                cur_index)
             if cur_index == -1:
                 raise LuaError("Lua table is invalid!")
             else:
@@ -172,7 +184,8 @@ class PyLuaTblParser(object):
             if cur_index == -1:
                 raise LuaError("Lua table is invalid!")
             else:
-                string_result = self.lua_table_str[str_beg_index:cur_index]
+                string_result = \
+                    self.lua_table_str[str_beg_index:cur_index].replace('\\', "\\\\")
                 cur_index += 2
                 return (cur_index, string_result)
 
