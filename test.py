@@ -40,3 +40,10 @@ print c.lua_table_str
 print b.lua_table_str
 print c.lua_table_dict == b.lua_table_dict
 # print d.lua_table_dict
+
+
+#  42-->load
+#  372-->__parse_lua_basic_exp
+#  223-->__parse_lua_table
+#  332-->__parse_lua_table
+#  385-->
