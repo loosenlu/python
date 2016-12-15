@@ -1,4 +1,3 @@
-
 import PyLuaTblParser
 
 test_str1 = '{array = {65,23,5,},\

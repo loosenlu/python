@@ -78,7 +78,7 @@ class PyLuaTblParser(object):
 
     def dumpLuaTable(self, f):
         """pass
-        
+
         """
         if not self.consistancy:
             self.lua_table_str = \
@@ -149,32 +149,44 @@ class PyLuaTblParser(object):
         2. 'string'
         3. [[string]]
         """
+
         length = len(self.lua_table_str)
         if (self.lua_table_str[cur_index] == '"' or
             self.lua_table_str[cur_index] == "'"):
             # FOR "string" or 'string'
+            escape_dict = {
+                "\\a" : '\a',    # '\a' (bell),
+                "\\b" : '\b',    # '\b' (backspace),
+                "\\f" : '\f',    # '\f' (form feed),
+                "\\n" : '\n',    # '\n' (newline),
+                "\\r" : '\r',    # '\r' (carriage return),
+                "\\t" : '\t',    # '\t' (horizontal tab),
+                "\\v" : '\v',    # '\v' (vertical tab),
+                "\\\\" : '\\',   #'\\' (backslash),
+                '\\"' : '\"',    # '\"' (double quote),
+                "\\'" : '\'',    # '\'' (single quote).
+            }
+            letter_container = []
             end_lable = self.lua_table_str[cur_index]
             cur_index += 1
-            str_beg_index = cur_index
-            # cur_index = self.lua_table_str.find(end_lable, cur_index)
-            # if cur_index == -1:
-            #     raise LuaError("Lua table is invalid!")
-            # else:
-            #     string_result = self.lua_table_str[str_beg_index:cur_index]
-            #     cur_index += 1
-            #     return (cur_index, string_result)
-
-            cur_index = self.lua_table_str.find(end_lable, cur_index)
-            while (cur_index != -1 and
-                   self.lua_table_str[cur_index - 1] == '\\'):
-                cur_index = cur_index = self.lua_table_str.find(end_lable,
-                                                                cur_index)
-            if cur_index == -1:
+            while (cur_index < length and
+                   self.lua_table_str[cur_index] != end_lable):
+                if self.lua_table_str[cur_index] == '\\':
+                    escape_letter = self.lua_table_str[cur_index:cur_index+2]
+                    if escape_letter in escape_dict:
+                        letter_container.append(escape_dict[escape_letter])
+                        cur_index += 2
+                    else:
+                        raise LuaError("Lua table is invalid!")
+                else:
+                    letter_container.append(self.lua_table_str[cur_index])
+                    cur_index += 1
+            if self.lua_table_str[cur_index] != end_lable:
                 raise LuaError("Lua table is invalid!")
             else:
-                string_result = self.lua_table_str[str_beg_index:cur_index]
+                string_ressult = ''.join(letter_container)
                 cur_index += 1
-                return (cur_index, string_result)
+                return (cur_index, string_ressult)
         else:
             # FOR [[string]]
             end_lable = "]]"
@@ -185,7 +197,7 @@ class PyLuaTblParser(object):
                 raise LuaError("Lua table is invalid!")
             else:
                 string_result = \
-                    self.lua_table_str[str_beg_index:cur_index].replace('\\', "\\\\")
+                    self.lua_table_str[str_beg_index:cur_index]
                 cur_index += 2
                 return (cur_index, string_result)
 
@@ -454,6 +466,38 @@ class PyLuaTblParser(object):
 
 
     @classmethod
+    def __parse_python_string(cls, python_string):
+
+        # escape_convert_table = {
+        #     '\a' : "\\a",  # '\a' (bell),
+        #     '\b' : "\\b",  # '\b' (backspace),
+        #     '\f' : "\\f",  # '\f' (form feed),
+        #     '\n' : "\\n",  # '\n' (newline),
+        #     '\r' : "\\r",  # '\r' (carriage return),
+        #     '\t' : "\\t",  # '\t' (horizontal tab),
+        #     '\v' : "\\v",  # '\v' (vertical tab),
+        #     '\\' : "\\\\", # '\\' (backslash),
+        #     '\"' : '\\"',  # '\"' (double quote),
+        #     '\'' : "\\'",  # '\'' (single quote).
+        # }
+        # letter_container = []
+        # for letter in python_string:
+        #     if letter in escape_convert_table:
+        #         letter_container.append(escape_convert_table[letter])
+        #     else:
+        #         letter_container.append(letter)
+        # # "...\\"..."(invalid)
+        # # '...\\'...'(invalid)
+        # # '...\\"...\\'...'(?????)
+        # string_result = ''.join(letter_container)
+        # if string_result.find("'") == -1:
+        #     return ''.join(["'", string_result, "'"])
+        # else:
+        #     return ''.join(['"', string_result, '"'])
+        return "[[" + python_string + "]]"
+
+
+    @classmethod
     def __parse_python_value(cls, python_value):
         if python_value is None:
             return "nil"
@@ -465,7 +509,7 @@ class PyLuaTblParser(object):
               isinstance(python_value, float)):
             return str(python_value)
         elif isinstance(python_value, str):
-            return python_value
+            return cls.__parse_python_string(python_value)
         elif isinstance(python_value, list):
             return cls.__parse_python_list(python_value)
         elif isinstance(python_value, dict):
