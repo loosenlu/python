@@ -5,11 +5,11 @@ test_str1 = '{array = {65,23,5,},\
             dict = {mixed = {43,54.33,false,nil,string = "value",},\
             array = {3,6,4,},string = nil,},}'
 
-test_str2 = '{array = {65,23,5,},dict = {mixed = {[2] = "haha",54.33,false,9,string = "value",},array = {3,6,4,},string = "value",}}'
-test_str3 = "{1,2,3,4}"
+test_str2 = '{array = {65,23,5,},dict = {fa = {[2] = "haha",54.33,false,9,string = "value",},array = {3,6,4,},string = "value",}}'
+test_str3 = "{hehe = {'haha', [''] = 'zaijian'}}"
 
 test_dict = {'array': [65, 23, 5], 'dict': {'mixed': {1: 43, 2: 54.33, 3: False, 4: None, 'string': 'value'}, 'array': [3, 6, 4]}}
-test_str4 = '{3,4,5,6,7}'
+test_str4 = '{3,4,5,6,7, "string" --[[]] .. --[[]] [[ hello]]}'
 
 
 print '1' * 16
@@ -24,6 +24,11 @@ print a.lua_table_dict
 
 print '3' * 16
 a = PyLuaTblParser.PyLuaTblParser(test_str3)
+print a.lua_table_dict
+
+
+print '4' * 16
+a = PyLuaTblParser.PyLuaTblParser(test_str4)
 print a.lua_table_dict
 
 
@@ -61,3 +66,9 @@ print a.lua_table_dict
 #  223-->__parse_lua_table
 #  332-->__parse_lua_table
 #  385-->
+
+#   File "PyLuaTblParser.py", line 42 -->load
+#   File "PyLuaTblParser.py", line 400 --> __parse_lua_basic_exp
+#   File "PyLuaTblParser.py", line 251 --> __parse_lua_table
+#   File "PyLuaTblParser.py", line 360 --> __parse_lua_table
+#   File "PyLuaTblParser.py", line 413
