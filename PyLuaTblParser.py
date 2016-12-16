@@ -238,18 +238,54 @@ class PyLuaTblParser(object):
         1. int--> +16, 0, -16,...;
         2. float--> 0.4, 4.57e-3, 0.3e12, 5e+20
         """
-        NUMBER_LETTERS_SET = set("+-0123456789abcedfABCDEFxX.")
+        sign = False
         length = len(self.lua_table_str)
-        num_beg = cur_index
-        while (cur_index < length and
-               self.lua_table_str[cur_index] in NUMBER_LETTERS_SET):
+        NUMBER_LETTER_SET = set("0123456789abcdefABCDEF.")
+        if self.lua_table_str[cur_index] == '-':
+            sign = True
             cur_index += 1
-        num_str = self.lua_table_str[num_beg:cur_index]
-        number_result = PyLuaTblParser.__str2num(num_str)
-        if number_result is None:
-            raise LuaError("Lua table is invalid!")
+
+        if (self.lua_table_str[cur_index:cur_index+2] == "0x" or
+            self.lua_table_str[cur_index:cur_index+2] == "0X"):
+            cur_index += 2
+            num_beg = cur_index
+            dot_index = -1
+            while (cur_index < length and
+                   self.lua_table_str[cur_index] in NUMBER_LETTER_SET):
+                if self.lua_table_str[cur_index] == '.':
+                    dot_index = cur_index
+                cur_index += 1
+            # has dot
+            if dot_index != -1:
+                int_part_str = self.lua_table_str[num_beg:dot_index]
+                int_part = int(int_part_str, 16)
+                fraction_start = dot_index + 1
+                fraction_end = cur_index - 1
+                fraction_part = 0
+                while fraction_start <= fraction_end:
+                    fraction_part = (fraction_part
+                                     + int(self.lua_table_str[fraction_end], 16)) / 16.0
+                    fraction_end -= 1
+                number_result = -1*(int_part + fraction_part) if sign else \
+                    (int_part + fraction_part)
+                return (cur_index, number_result)
         else:
-            return (cur_index, number_result)
+            num_beg = cur_index
+            while (cur_index < length and
+                   self.lua_table_str[cur_index] in NUMBER_LETTER_SET):
+                cur_index += 1
+            num_str = self.lua_table_str[num_beg:cur_index]
+            try:
+                number_result = int(num_str)
+                number_result = -1 * number_result if sign else number_result
+                return (cur_index, number_result)
+            except ValueError:
+                try:
+                    number_result = float(num_str)
+                    number_result = -1 * number_result if sign else number_result
+                    return (cur_index, number_result)
+                except ValueError:
+                    raise LuaError("Lua table is invalid!")
 
 
 
@@ -361,7 +397,7 @@ class PyLuaTblParser(object):
                 [exp1] = exp2
         and the other situations are invalid.
         """
-        NUMBER_START_LETTERS_SET = set("+-0123456789")
+        NUMBER_START_LETTERS_SET = set("-0123456789")
         token_container = []
         is_dict = False
         length = len(self.lua_table_str)
@@ -445,7 +481,8 @@ class PyLuaTblParser(object):
 
         container = []
         for k, v in python_dict.iteritems():
-            if isinstance(k, int):
+            if (isinstance(k, int) or
+                isinstance(k, float)):
                 key = ''.join(['[', str(k), ']'])
                 value = cls.__parse_python_value(v)
                 container.append(''.join([key, " = ", value]))
@@ -462,7 +499,7 @@ class PyLuaTblParser(object):
         container = []
         for i in python_list:
             container.append(cls.__parse_python_value(i))
-        return '[' + ','.join(container) + ']'
+        return '{' + ','.join(container) + '}'
 
 
     @classmethod
@@ -529,7 +566,7 @@ class PyLuaTblParser(object):
                 if (not dict_data.has_key(item.first) and
                     item.second is not None):
                     dict_data[item.first] = item.second
-            else:
+            elif item is not None:
                 dict_data[index] = item
                 index += 1
         return dict_data
