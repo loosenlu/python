@@ -240,18 +240,18 @@ class PyLuaTblParser(object):
         """
         sign = False
         length = len(self.lua_table_str)
-        NUMBER_LETTER_SET = set("0123456789abcdefABCDEF.")
         if self.lua_table_str[cur_index] == '-':
             sign = True
             cur_index += 1
 
         if (self.lua_table_str[cur_index:cur_index+2] == "0x" or
             self.lua_table_str[cur_index:cur_index+2] == "0X"):
+            HEX_NUMBER_LETTER_SET = set("0123456789abcdefABCDEF.")
             cur_index += 2
             num_beg = cur_index
             dot_index = -1
             while (cur_index < length and
-                   self.lua_table_str[cur_index] in NUMBER_LETTER_SET):
+                   self.lua_table_str[cur_index] in HEX_NUMBER_LETTER_SET):
                 if self.lua_table_str[cur_index] == '.':
                     dot_index = cur_index
                 cur_index += 1
@@ -270,6 +270,7 @@ class PyLuaTblParser(object):
                     (int_part + fraction_part)
                 return (cur_index, number_result)
         else:
+            NUMBER_LETTER_SET = set("+-0123456789e.")
             num_beg = cur_index
             while (cur_index < length and
                    self.lua_table_str[cur_index] in NUMBER_LETTER_SET):
@@ -367,7 +368,8 @@ class PyLuaTblParser(object):
         name_beg = cur_index
         while (cur_index < length and
                (self.lua_table_str[cur_index] == '_'
-                or self.lua_table_str[cur_index].isalpha())):
+                or self.lua_table_str[cur_index].isalpha()
+                or self.lua_table_str[cur_index].isdigit())):
             cur_index += 1
         return (cur_index, self.lua_table_str[name_beg:cur_index])
 
