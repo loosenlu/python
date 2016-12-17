@@ -196,8 +196,12 @@ class PyLuaTblParser(object):
             if cur_index == -1:
                 raise LuaError("Lua table is invalid!")
             else:
-                string_result = \
-                    self.lua_table_str[str_beg_index:cur_index]
+                if self.lua_table_str[str_beg_index] == '\n':
+                    string_result = \
+                        self.lua_table_str[str_beg_index + 1:cur_index]
+                else:
+                    string_result = \
+                        self.lua_table_str[str_beg_index:cur_index]
                 cur_index += 2
                 return (cur_index, string_result)
 
@@ -538,14 +542,18 @@ class PyLuaTblParser(object):
     @classmethod
     def __str2num(cls, num_str):
         try:
-            # is int?
+            # is int? (10 base)
             num = int(num_str)
             return num
         except ValueError:
             try:
-                # is float?
-                num = float(num_str)
+                # is int? (16 base)
+                num = int(num_str, 16)
                 return num
             except ValueError:
-                # invalid
-                return None
+                try:
+                # is float
+                    num = float(num_str)
+                    return num
+                except ValueError:
+                    return None

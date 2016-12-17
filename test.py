@@ -4,11 +4,11 @@ test_str1 = '{array = {65,23,5,},\
             dict = {mixed = {43,54.33,false,nil,string = "value",},\
             array = {3,6,4,},string = nil,},}'
 
-test_str2 = '{array = {65,23,5,},dict = {mixed = {[66] = "ha\"ha",54.33,false,9,string = "va\nlue",},array = {3,6,4,},string = "value",}}'
+test_str2 = '{array = {65,23,5,},dict = {mixed = {[66] = "ha\\"ha",54.33,false,9,string = "va\nlue",},array = {3,6,4,},string = "value",}}'
 test_str3 = "{1,2,3,4}"
 
 test_dict = {'array': [65, 23, 5], 'dict': {'mixed': {1: 43, 2: 54.33, 3: False, 4: None, 'string': 'value'}, 'array': [3, 6, 4]}}
-test_str4 = '{3,4,5,6,7}'
+test_str4 = '{3.0, 0x3.1416, 0x123, 0.31416E1, 34e1}'
 
 
 print '1' * 16
@@ -23,6 +23,11 @@ print a.lua_table_dict
 
 print '3' * 16
 a = PyLuaTblParser.PyLuaTblParser(test_str3)
+print a.lua_table_dict
+
+
+print '4' * 16
+a = PyLuaTblParser.PyLuaTblParser(test_str4)
 print a.lua_table_dict
 
 
