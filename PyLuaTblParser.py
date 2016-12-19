@@ -73,8 +73,9 @@ class PyLuaTblParser(object):
         """pass
 
         """
-        with open(f, 'r') as f_oject:
-            lua_table = f_oject.read()
+        with open(f, 'r') as f_object:
+            li = f_object.readlines()
+            lua_table = ''.join(li)
             self.load(lua_table)
 
 
