@@ -26,13 +26,40 @@ import PyLuaTblParser
 
 
 test_str1 = '{array = {65,23,5,},\
-            dict = {mixed = {43,54.33,false,nil,string = "value",},\
+            dict = {mixed = {43,54.33,false,nil,string = "value", ignore = nil},\
             array = {3,6,4,},string = nil,},}'
 
 test_str2 = '{array = {65,23,5,},dict = {mixed = {[66] = "ha\\"ha",54.33,false,9,string = "va\nlue",},array = {3,6,4,},string = "value",}}'
 test_str3 = "{1,2,3,4}"
 
 test_dict = {'array': [65, 23, 5], 'dict': {'mixed': {1: 43, 2: 54.33, 3: False, 4: None, 'string': 'value'}, 'array': [3, 6, 4]}}
+
+test_str4 = '{-20.123,-0x123.ef, 0Xad.efa, 20, 20.1,   ,23}'
+
+
+t_string_1 = '{[[hello]], "zaijian", \'good bye\'}'
+
+t_table_1 = '{name1 = {1,1e10, name2 = {"hehe", [[nihao]], ["key"] = "value", "hello "  ..   "world!" },}, "1"}'
+
+test_str = '{[99] = nil, nil, a = {nil, {}, hehe = nil, "haha", "4"}, 2, 4, nil}'
+
+
+print '1' * 16
+a = PyLuaTblParser.PyLuaTblParser(test_str)
+print a.lua_table_dict
+print '*' * 32
+a.loadDict(test_dict)
+print a.dump()
+b = PyLuaTblParser.PyLuaTblParser(a.dump())
+print b.lua_table_dict
+
+print '*' * 32
+print '*' * 32
+print '*' * 32
+a.load(t_table_1)
+print a.lua_table_dict
+
+
 test_str4 = '{--  \n    --fdfa\n, "hehe"}'
 
 
@@ -42,6 +69,7 @@ test_str5 = """{root = {[96] = {{},1,2,nil},[1] = [[Test Pattern String]],[2] = 
 
 a = PyLuaTblParser.PyLuaTblParser(test_str5)
 print a.lua_table_dict
+
 
 
 # b = PyLuaTblParser.PyLuaTblParser(test_str1)
